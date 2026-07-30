@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>半夜偷玩手机</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            overflow: hidden;
+            background: #0a0a0a;
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+
+        /* 菜单界面 */
+        #menu-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(180deg, #0d1b2a 0%, #1b263b 50%, #0a0a0a 100%);
+            z-index: 100;
+            transition: opacity 0.5s;
+        }
+
+        #menu-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .phone-frame {
+            width: 280px;
+            height: 500px;
+            border: 3px solid #333;
+            border-radius: 30px;
+            position: relative;
+            background: #000;
+            box-shadow: 0 0 50px rgba(0, 150, 255, 0.2), inset 0 0 30px rgba(0,0,0,0.8);
+            animation: phoneGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes phoneGlow {
+            0%, 100% { box-shadow: 0 0 50px rgba(0, 150, 255, 0.2), inset 0 0 30px rgba(0,0,0,0.8); }
+            50% { box-shadow: 0 0 80px rgba(0, 200, 255, 0.35), inset 0 0 30px rgba(0,0,0,0.8); }
+        }
+
+        .phone-screen {
+            position: absolute;
+            top: 20px;
+            left: 15px;
+            right: 15px;
+            bottom: 20px;
+            border-radius: 20px;
+            background: linear-gradient(180deg, #0a1628 0%, #16213e 100%);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 15px;
+        }
+
+        .phone-notch {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 20px;
+            background: #000;
+            border-radius: 0 0 15px 15px;
+        }
+
+        .game-title {
+            color: #00d4aa;
+            font-size: 22px;
+            font-weight: bold;
+            text-shadow: 0 0 20px rgba(0, 212, 170, 0.5);
+            margin-top: 20px;
+            margin-bottom: 10px;
+            animation: titlePulse 2s ease-in-out infinite;
+        }
+
+        @keyframes titlePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .title-sub {
+            color: #8899aa;
+            font-size: 12px;
+            margin-bottom: 30px;
+        }
+
+        .difficulty-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .diff-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .diff-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .diff-btn:hover::before {
+            left: 100%;
+        }
+
+        .diff-btn:hover {
+            transform: translateX(5px);
+            filter: brightness(1.2);
+        }
+
+        .diff-easy { background: linear-gradient(135deg, #00b894, #00cec9); }
+        .diff-normal { background: linear-gradient(135deg, #0984e3, #74b9ff); }
+        .diff-hard { background: linear-gradient(135deg, #e17055, #fdcb6e); }
+        .diff-nightmare { background: linear-gradient(135deg, #6c5ce7, #a29bfe); }
+        .diff-hell { 
+            background: linear-gradient(135deg, #d63031, #ff7675);
+            animation: hellPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes hellPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(214, 48, 49, 0.4); }
+            50% { box-shadow: 0 0 40px rgba(255, 118, 117, 0.7); }
+        }
+
+        .diff-label {
+            font-size: 10px;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+
+        .phone-home-btn {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 50px;
+            border: 2px solid #333;
+            border-radius: 50%;
+        }
+
+        /* 游戏界面 */
+        #game-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+
+        #game-screen.active {
+            display: block;
+        }
+
+        #game-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* HUD */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .hud-item {
+            color: #fff;
+            font-size: 14px;
+            text-shadow: 0 0 10px rgba(0,0,0,0.8);
+        }
+
+        .hud-item span {
+            color: #00d4aa;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .progress-bar {
+            width: 120px;
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4aa, #00f5d4);
+            border-radius: 4px;
+            transition: width 0.3s;
+            box-shadow: 0 0 10px rgba(0, 212, 170, 0.5);
+        }
+
+        /* 警告信息 */
+        #warning-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(200, 0, 0, 0.85);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            animation: warningFlash 0.5s ease-in-out infinite alternate;
+        }
+
+        #warning-overlay.active {
+            display: flex;
+        }
+
+        @keyframes warningFlash {
+            from { background: rgba(200, 0, 0, 0.85); }
+            to { background: rgba(255, 0, 0, 0.95); }
+        }
+
+        .warning-icon {
+            width: 80px;
+            height: 80px;
+            border: 5px solid #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 50px;
+            color: #fff;
+            margin-bottom: 20px;
+            animation: warningShake 0.5s ease-in-out infinite;
+        }
+
+        @keyframes warningShake {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
+        }
+
+        .warning-text {
+            color: #fff;
+            font-size: 32px;
+            font-weight: bold;
+            text-shadow: 0 0 20px rgba(0,0,0,0.5);
+            margin-bottom: 15px;
+        }
+
+        .warning-sub {
+            color: #ffcccc;
+            font-size: 16px;
+        }
+
+        .warning-timer {
+            color: #fff;
+            font-size: 48px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        /* 控制按钮 */
+        #controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: grid;
+            grid-template-columns: 60px 60px 60px;
+            grid-template-rows: 60px 60px;
+            gap: 8px;
+            z-index: 10;
+        }
+
+        .ctrl-btn {
+            width: 60px;
+            height: 60px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 15px;
+            background: rgba(0,0,0,0.5);
+            color: #fff;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.1s;
+            -webkit-touch-callout: none;
+        }
+
+        .ctrl-btn:active, .ctrl-btn.active {
+            background: rgba(0, 212, 170, 0.3);
+            border-color: #00d4aa;
+            transform: scale(0.95);
+        }
+
+        .ctrl-btn:disabled {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .ctrl-up { grid-column: 2; grid-row: 1; }
+        .ctrl-left { grid-column: 1; grid-row: 2; }
+        .ctrl-down { grid-column: 2; grid-row: 2; }
+        .ctrl-right { grid-column: 3; grid-row: 2; }
+
+        /* 游戏结束/关卡完成 */
+        #game-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 300;
+        }
+
+        #game-modal.active {
+            display: flex;
+        }
+
+        .modal-title {
+            color: #00d4aa;
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 0 0 30px rgba(0, 212, 170, 0.5);
+        }
+
+        .modal-title.fail {
+            color: #ff6b6b;
+            text-shadow: 0 0 30px rgba(255, 107, 107, 0.5);
+        }
+
+        .modal-stats {
+            color: #aaa;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .modal-btn {
+            margin-top: 30px;
+            padding: 15px 40px;
+            border: 2px solid #00d4aa;
+            border-radius: 25px;
+            background: transparent;
+            color: #00d4aa;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-btn:hover {
+            background: #00d4aa;
+            color: #000;
+        }
+
+        /* 粒子效果 */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+            animation: particleFade 1s ease-out forwards;
+        }
+
+        @keyframes particleFade {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0); }
+        }
+
+        /* 扫描线效果 */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.03) 2px,
+                rgba(0, 0, 0, 0.03) 4px
+            );
+        }
+
+        /* 被发现动画 */
+        @keyframes caughtShake {
+            0%, 100% { transform: translate(0, 0); }
+            10% { transform: translate(-10px, -10px); }
+            20% { transform: translate(10px, 10px); }
+            30% { transform: translate(-10px, 10px); }
+            40% { transform: translate(10px, -10px); }
+            50% { transform: translate(-5px, 5px); }
+            60% { transform: translate(5px, -5px); }
+            70% { transform: translate(-5px, -5px); }
+            80% { transform: translate(5px, 5px); }
+            90% { transform: translate(-2px, 2px); }
+        }
+
+        .caught-animation {
+            animation: caughtShake 0.5s ease-in-out;
+        }
+
+        /* 小地图 */
+        #minimap {
+            position: absolute;
+            top: 70px;
+            right: 20px;
+            width: 100px;
+            height: 100px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            background: rgba(0,0,0,0.5);
+            z-index: 10;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- 菜单界面 -->
+    <div id="menu-screen">
+        <div class="phone-frame">
+            <div class="phone-notch"></div>
+            <div class="phone-screen">
+                <div class="game-title">📱 半夜偷玩手机</div>
+                <div class="title-sub">小心别被妈妈发现！</div>
+                <div class="difficulty-buttons">
+                    <button class="diff-btn diff-easy" onclick="startGame('easy')">
+                        简单
+                        <div class="diff-label">妈妈睡得很熟 💤</div>
+                    </button>
+                    <button class="diff-btn diff-normal" onclick="startGame('normal')">
+                        普通
+                        <div class="diff-label">偶尔会被检查 👀</div>
+                    </button>
+                    <button class="diff-btn diff-hard" onclick="startGame('hard')">
+                        困难
+                        <div class="diff-label">妈妈很警觉 ⚠️</div>
+                    </button>
+                    <button class="diff-btn diff-nightmare" onclick="startGame('nightmare')">
+                        噩梦
+                        <div class="diff-label">妈妈几乎不睡 😰</div>
+                    </button>
+                    <button class="diff-btn diff-hell" onclick="startGame('hell')">
+                        地狱
+                        <div class="diff-label">妈妈开着监控 👁️</div>
+                    </button>
+                </div>
+            </div>
+            <div class="phone-home-btn"></div>
+        </div>
+    </div>
+
+    <!-- 游戏界面 -->
+    <div id="game-screen">
+        <canvas id="game-canvas"></canvas>
+        <div class="scanlines"></div>
+        
+        <!-- HUD -->
+        <div id="hud">
+            <div class="hud-item">
+                关卡 <span id="level-display">1</span>
+            </div>
+            <div class="hud-item" style="text-align: center;">
+                <div>光球收集</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                </div>
+                <div style="font-size: 12px; margin-top: 3px;">
+                    <span id="collected">0</span> / <span id="total-orbs">5</span>
+                </div>
+            </div>
+            <div class="hud-item">
+                生命 <span id="lives-display">❤️❤️❤️</span>
+            </div>
+        </div>
+
+        <!-- 小地图 -->
+        <canvas id="minimap"></canvas>
+
+        <!-- 警告覆盖层 -->
+        <div id="warning-overlay">
+            <div class="warning-icon">⚠️</div>
+            <div class="warning-text">妈妈来了！快停手！</div>
+            <div class="warning-sub">不要动！不要发出声音！</div>
+            <div class="warning-timer" id="warning-timer">3.0</div>
+        </div>
+
+        <!-- 控制按钮 -->
+        <div id="controls">
+            <button class="ctrl-btn ctrl-up" id="btn-up" onpointerdown="setDir('up', true)" onpointerup="setDir('up', false)" onpointerleave="setDir('up', false)">▲</button>
+            <button class="ctrl-btn ctrl-left" id="btn-left" onpointerdown="setDir('left', true)" onpointerup="setDir('left', false)" onpointerleave="setDir('left', false)">◀</button>
+            <button class="ctrl-btn ctrl-down" id="btn-down" onpointerdown="setDir('down', true)" onpointerup="setDir('down', false)" onpointerleave="setDir('down', false)">▼</button>
+            <button class="ctrl-btn ctrl-right" id="btn-right" onpointerdown="setDir('right', true)" onpointerup="setDir('right', false)" onpointerleave="setDir('right', false)">▶</button>
+        </div>
+
+        <!-- 游戏模态框 -->
+        <div id="game-modal">
+            <div class="modal-title" id="modal-title">关卡完成！</div>
+            <div class="modal-stats" id="modal-stats">收集了 5/5 个光球</div>
+            <div class="modal-stats" id="modal-bonus">奖励生命 +1</div>
+            <button class="modal-btn" onclick="nextLevel()">继续</button>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 游戏配置 ====================
+        const DIFFICULTY = {
+            easy: { momInterval: [8000, 15000], momDuration: 3000, warningTime: 2000, orbCount: 3, obstacleCount: 2, speed: 3 },
+            normal: { momInterval: [5000, 10000], momDuration: 4000, warningTime: 1500, orbCount: 5, obstacleCount: 4, speed: 3.5 },
+            hard: { momInterval: [4000, 7000], momDuration: 5000, warningTime: 1000, orbCount: 7, obstacleCount: 7, speed: 4 },
+            nightmare: { momInterval: [3000, 5000], momDuration: 6000, warningTime: 800, orbCount: 10, obstacleCount: 10, speed: 4.5 },
+            hell: { momInterval: [2000, 4000], momDuration: 7000, warningTime: 500, orbCount: 15, obstacleCount: 15, speed: 5 }
+        };
+
+        // ==================== 游戏状态 ====================
+        let canvas, ctx, minimap, minimapCtx;
+        let gameState = 'menu'; // menu, playing, warning, paused, gameover, levelcomplete
+        let currentDifficulty = 'normal';
+        let level = 1;
+        let lives = 3;
+        let orbs = [];
+        let obstacles = [];
+        let particles = [];
+        let player = { x: 0, y: 0, vx: 0, vy: 0, radius: 12, trail: [] };
+        let collectedOrbs = 0;
+        let totalOrbs = 5;
+        let momTimer = null;
+        let warningTimer = null;
+        let momActive = false;
+        let keys = { up: false, down: false, left: false, right: false };
+        let camera = { x: 0, y: 0 };
+        let worldSize = { width: 2000, height: 2000 };
+        let lastTime = 0;
+        let animationId = null;
+
+        // ==================== 初始化 ====================
+        function init() {
+            canvas = document.getElementById('game-canvas');
+            ctx = canvas.getContext('2d');
+            minimap = document.getElementById('minimap');
+            minimapCtx = minimap.getContext('2d');
+            
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // 键盘控制
+            document.addEventListener('keydown', (e) => {
+                if (gameState !== 'playing') return;
+                switch(e.key) {
+                    case 'ArrowUp': case 'w': case 'W': keys.up = true; break;
+                    case 'ArrowDown': case 's': case 'S': keys.down = true; break;
+                    case 'ArrowLeft': case 'a': case 'A': keys.left = true; break;
+                    case 'ArrowRight': case 'd': case 'D': keys.right = true; break;
+                }
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                switch(e.key) {
+                    case 'ArrowUp': case 'w': case 'W': keys.up = false; break;
+                    case 'ArrowDown': case 's': case 'S': keys.down = false; break;
+                    case 'ArrowLeft': case 'a': case 'A': keys.left = false; break;
+                    case 'ArrowRight': case 'd': case 'D': keys.right = false; break;
+                }
+            });
+        }
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            minimap.width = 100;
+            minimap.height = 100;
+        }
+
+        // ==================== 游戏控制 ====================
+        function startGame(difficulty) {
+            currentDifficulty = difficulty;
+            level = 1;
+            lives = 3;
+            
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.add('active');
+            
+            initLevel();
+        }
+
+        function initLevel() {
+            const config = DIFFICULTY[currentDifficulty];
+            totalOrbs = Math.min(config.orbCount + Math.floor((level - 1) * 1.5), 25);
+            const obstacleCount = Math.min(config.obstacleCount + Math.floor((level - 1) * 2), 40);
+            
+            // 初始化玩家
+            player.x = worldSize.width / 2;
+            player.y = worldSize.height / 2;
+            player.vx = 0;
+            player.vy = 0;
+            player.trail = [];
+            
+            // 生成光球
+            orbs = [];
+            for (let i = 0; i < totalOrbs; i++) {
+                let orb;
+                do {
+                    orb = {
+                        x: 100 + Math.random() * (worldSize.width - 200),
+                        y: 100 + Math.random() * (worldSize.height - 200),
+                        radius: 8 + Math.random() * 4,
+                        pulse: Math.random() * Math.PI * 2,
+                        collected: false
+                    };
+                } while (distance(orb, player) < 200);
+                orbs.push(orb);
+            }
+            
+            // 生成障碍物
+            obstacles = [];
+            const types = ['bed', 'desk', 'chair', 'toy', 'shoe', 'clothes'];
+            for (let i = 0; i < obstacleCount; i++) {
+                let obs;
+                do {
+                    obs = {
+                        x: 50 + Math.random() * (worldSize.width - 100),
+                        y: 50 + Math.random() * (worldSize.height - 100),
+                        width: 30 + Math.random() * 60,
+                        height: 30 + Math.random() * 60,
+                        type: types[Math.floor(Math.random() * types.length)],
+                        rotation: Math.random() * Math.PI * 2
+                    };
+                } while (distance({x: obs.x, y: obs.y}, player) < 150);
+                obstacles.push(obs);
+            }
+            
+            collectedOrbs = 0;
+            gameState = 'playing';
+            momActive = false;
+            
+            updateHUD();
+            scheduleMomEvent();
+            
+            if (animationId) cancelAnimationFrame(animationId);
+            lastTime = performance.now();
+            gameLoop(lastTime);
+        }
+
+        // ==================== 妈妈事件系统 ====================
+        function scheduleMomEvent() {
+            const config = DIFFICULTY[currentDifficulty];
+            const delay = config.momInterval[0] + Math.random() * (config.momInterval[1] - config.momInterval[0]);
+            
+            momTimer = setTimeout(() => {
+                triggerMomWarning();
+            }, delay);
+        }
+
+        function triggerMomWarning() {
+            if (gameState !== 'playing') return;
+            
+            const config = DIFFICULTY[currentDifficulty];
+            gameState = 'warning';
+            
+            // 显示警告
+            const overlay = document.getElementById('warning-overlay');
+            overlay.classList.add('active');
+            
+            // 禁用控制
+            document.querySelectorAll('.ctrl-btn').forEach(btn => btn.disabled = true);
+            
+            let timeLeft = config.warningTime / 1000;
+            const timerEl = document.getElementById('warning-timer');
+            timerEl.textContent = timeLeft.toFixed(1);
+            
+            warningTimer = setInterval(() => {
+                timeLeft -= 0.1;
+                timerEl.textContent = Math.max(0, timeLeft).toFixed(1);
+                
+                if (timeLeft <= 0) {
+                    clearInterval(warningTimer);
+                    startMomCheck();
+                }
+            }, 100);
+        }
+
+        function startMomCheck() {
+            const config = DIFFICULTY[currentDifficulty];
+            gameState = 'mom_check';
+            momActive = true;
+            
+            const overlay = document.getElementById('warning-overlay');
+            overlay.innerHTML = `
+                <div class="warning-icon" style="animation: none; border-color: #ff0000;">👁️</div>
+                <div class="warning-text" style="color: #ff0000;">妈妈在检查！</div>
+                <div class="warning-sub">保持静止！任何移动都会被发现！</div>
+                <div class="warning-timer" id="check-timer" style="color: #ff6666;">${(config.momDuration/1000).toFixed(1)}</div>
+            `;
+            
+            let checkTime = config.momDuration / 1000;
+            const checkInterval = setInterval(() => {
+                checkTime -= 0.1;
+                const timerEl = document.getElementById('check-timer');
+                if (timerEl) timerEl.textContent = Math.max(0, checkTime).toFixed(1);
+                
+                // 检查玩家是否在移动
+                if (checkTime > 0 && (Math.abs(player.vx) > 0.5 || Math.abs(player.vy) > 0.5 || keys.up || keys.down || keys.left || keys.right)) {
+                    clearInterval(checkInterval);
+                    playerCaught();
+                    return;
+                }
+                
+                if (checkTime <= 0) {
+                    clearInterval(checkInterval);
+                    momLeaves();
+                }
+            }, 100);
+        }
+
+        function momLeaves() {
+            momActive = false;
+            gameState = 'playing';
+            
+            // 恢复警告UI
+            const overlay = document.getElementById('warning-overlay');
+            overlay.classList.remove('active');
+            overlay.innerHTML = `
+                <div class="warning-icon">⚠️</div>
+                <div class="warning-text">妈妈来了！快停手！</div>
+                <div class="warning-sub">不要动！不要发出声音！</div>
+                <div class="warning-timer" id="warning-timer">3.0</div>
+            `;
+            
+            document.querySelectorAll('.ctrl-btn').forEach(btn => btn.disabled = false);
+            
+            scheduleMomEvent();
+        }
+
+        function playerCaught() {
+            lives--;
+            updateHUD();
+            
+            // 震动效果
+            document.getElementById('game-screen').classList.add('caught-animation');
+            setTimeout(() => {
+                document.getElementById('game-screen').classList.remove('caught-animation');
+            }, 500);
+            
+            if (lives <= 0) {
+                gameOver();
+            } else {
+                momLeaves();
+            }
+        }
+
+        // ==================== 游戏主循环 ====================
+        function gameLoop(timestamp) {
+            const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+            lastTime = timestamp;
+            
+            if (gameState === 'playing') {
+                updatePlayer(dt);
+                checkCollisions();
+                updateParticles(dt);
+            } else if (gameState === 'warning') {
+                // 减速到停止
+                player.vx *= 0.9;
+                player.vy *= 0.9;
+                player.x += player.vx;
+                player.y += player.vy;
+            }
+            
+            // 更新相机
+            updateCamera();
+            
+            // 渲染
+            render();
+            renderMinimap();
+            
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function updatePlayer(dt) {
+            const config = DIFFICULTY[currentDifficulty];
+            const speed = config.speed * (1 + level * 0.05);
+            const accel = 20;
+            const friction = 0.85;
+            
+            // 输入处理
+            let ax = 0, ay = 0;
+            if (keys.up) ay -= accel;
+            if (keys.down) ay += accel;
+            if (keys.left) ax -= accel;
+            if (keys.right) ax += accel;
+            
+            // 归一化对角线移动
+            if (ax !== 0 && ay !== 0) {
+                ax *= 0.707;
+                ay *= 0.707;
+            }
+            
+            player.vx += ax * dt;
+            player.vy += ay * dt;
+            player.vx *= friction;
+            player.vy *= friction;
+            
+            // 限制最大速度
+            const maxSpeed = speed * 60 * dt;
+            const currentSpeed = Math.sqrt(player.vx * player.vx + player.vy * player.vy);
+            if (currentSpeed > maxSpeed) {
+                player.vx = (player.vx / currentSpeed) * maxSpeed;
+                player.vy = (player.vy / currentSpeed) * maxSpeed;
+            }
+            
+            // 更新位置
+            player.x += player.vx;
+            player.y += player.vy;
+            
+            // 边界限制
+            player.x = Math.max(player.radius, Math.min(worldSize.width - player.radius, player.x));
+            player.y = Math.max(player.radius, Math.min(worldSize.height - player.radius, player.y));
+            
+            // 障碍物碰撞
+            for (let obs of obstacles) {
+                const closest = closestPointOnRect(player, obs);
+                const dist = distance(player, closest);
+                if (dist < player.radius) {
+                    const dx = player.x - closest.x;
+                    const dy = player.y - closest.y;
+                    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+                    player.x = closest.x + (dx / len) * player.radius;
+                    player.y = closest.y + (dy / len) * player.radius;
+                    player.vx *= 0.5;
+                    player.vy *= 0.5;
+                }
+            }
+            
+            // 更新轨迹
+            player.trail.push({ x: player.x, y: player.y, time: 1 });
+            player.trail = player.trail.filter(t => {
+                t.time -= dt * 3;
+                return t.time > 0;
+            });
+        }
+
+        function checkCollisions() {
+            // 光球收集
+            for (let orb of orbs) {
+                if (orb.collected) continue;
+                const dist = distance(player, orb);
+                if (dist < player.radius + orb.radius) {
+                    orb.collected = true;
+                    collectedOrbs++;
+                    
+                    // 生成粒子
+                    for (let i = 0; i < 15; i++) {
+                        const angle = (Math.PI * 2 * i) / 15;
+                        particles.push({
+                            x: orb.x,
+                            y: orb.y,
+                            vx: Math.cos(angle) * 100,
+                            vy: Math.sin(angle) * 100,
+                            life: 1,
+                            color: `hsl(${120 + Math.random() * 60}, 100%, 60%)`,
+                            size: 3 + Math.random() * 3
+                        });
+                    }
+                    
+                    updateHUD();
+                    
+                    if (collectedOrbs >= totalOrbs) {
+                        levelComplete();
+                    }
+                }
+            }
+        }
+
+        function updateParticles(dt) {
+            particles = particles.filter(p => {
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                p.vx *= 0.95;
+                p.vy *= 0.95;
+                p.life -= dt * 2;
+                return p.life > 0;
+            });
+        }
+
+        function updateCamera() {
+            camera.x = player.x - canvas.width / 2;
+            camera.y = player.y - canvas.height / 2;
+            camera.x = Math.max(0, Math.min(worldSize.width - canvas.width, camera.x));
+            camera.y = Math.max(0, Math.min(worldSize.height - canvas.height, camera.y));
+        }
+
+        // ==================== 渲染 ====================
+        function render() {
+            // 清空画布
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.save();
+            ctx.translate(-camera.x, -camera.y);
+            
+            // 绘制网格背景
+            ctx.strokeStyle = 'rgba(0, 212, 170, 0.05)';
+            ctx.lineWidth = 1;
+            const gridSize = 50;
+            const startX = Math.floor(camera.x / gridSize) * gridSize;
+            const startY = Math.floor(camera.y / gridSize) * gridSize;
+            
+            for (let x = startX; x < camera.x + canvas.width + gridSize; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, camera.y);
+                ctx.lineTo(x, camera.y + canvas.height);
+                ctx.stroke();
+            }
+            for (let y = startY; y < camera.y + canvas.height + gridSize; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(camera.x, y);
+                ctx.lineTo(camera.x + canvas.width, y);
+                ctx.stroke();
+            }
+            
+            // 绘制边界
+            ctx.strokeStyle = 'rgba(255, 50, 50, 0.3)';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(0, 0, worldSize.width, worldSize.height);
+            
+            // 绘制障碍物
+            for (let obs of obstacles) {
+                ctx.save();
+                ctx.translate(obs.x, obs.y);
+                ctx.rotate(obs.rotation);
+                
+                // 阴影
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.fillRect(-obs.width/2 + 5, -obs.height/2 + 5, obs.width, obs.height);
+                
+                // 主体
+                const colors = {
+                    bed: '#4a4a6a',
+                    desk: '#5a4a3a',
+                    chair: '#6a5a4a',
+                    toy: '#8a6a5a',
+                    shoe: '#3a3a4a',
+                    clothes: '#7a6a7a'
+                };
+                ctx.fillStyle = colors[obs.type] || '#4a4a4a';
+                ctx.fillRect(-obs.width/2, -obs.height/2, obs.width, obs.height);
+                
+                // 高光
+                ctx.fillStyle = 'rgba(255,255,255,0.05)';
+                ctx.fillRect(-obs.width/2, -obs.height/2, obs.width, obs.height * 0.3);
+                
+                ctx.restore();
+            }
+            
+            // 绘制光球
+            for (let orb of orbs) {
+                if (orb.collected) continue;
+                
+                orb.pulse += 0.03;
+                const pulseScale = 1 + Math.sin(orb.pulse) * 0.2;
+                
+                // 外发光
+                const gradient = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, orb.radius * 3 * pulseScale);
+                gradient.addColorStop(0, 'rgba(0, 255, 150, 0.3)');
+                gradient.addColorStop(1, 'rgba(0, 255, 150, 0)');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(orb.x, orb.y, orb.radius * 3 * pulseScale, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 光球主体
+                ctx.fillStyle = '#00ff96';
+                ctx.beginPath();
+                ctx.arc(orb.x, orb.y, orb.radius * pulseScale, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 高光
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                ctx.beginPath();
+                ctx.arc(orb.x - orb.radius * 0.3, orb.y - orb.radius * 0.3, orb.radius * 0.4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // 绘制粒子
+            for (let p of particles) {
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+            
+            // 绘制玩家轨迹
+            for (let i = 0; i < player.trail.length; i++) {
+                const t = player.trail[i];
+                const alpha = t.time * 0.3;
+                const size = player.radius * t.time * 0.5;
+                ctx.fillStyle = `rgba(0, 212, 170, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // 绘制玩家
+            // 外发光
+            const playerGlow = ctx.createRadialGradient(player.x, player.y, 0, player.x, player.y, player.radius * 4);
+            playerGlow.addColorStop(0, 'rgba(0, 212, 170, 0.2)');
+            playerGlow.addColorStop(1, 'rgba(0, 212, 170, 0)');
+            ctx.fillStyle = playerGlow;
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.radius * 4, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 玩家主体
+            ctx.fillStyle = '#00d4aa';
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 玩家高光
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.beginPath();
+            ctx.arc(player.x - player.radius * 0.3, player.y - player.radius * 0.3, player.radius * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 玩家眼睛（表示方向）
+            const eyeOffset = 4;
+            const eyeDir = Math.atan2(player.vy, player.vx) || 0;
+            const eyeX = Math.cos(eyeDir) * 3;
+            const eyeY = Math.sin(eyeDir) * 3;
+            
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(player.x + eyeX - eyeOffset, player.y + eyeY - 2, 3, 0, Math.PI * 2);
+            ctx.arc(player.x + eyeX + eyeOffset, player.y + eyeY - 2, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(player.x + eyeX - eyeOffset + 1, player.y + eyeY - 2, 1.5, 0, Math.PI * 2);
+            ctx.arc(player.x + eyeX + eyeOffset + 1, player.y + eyeY - 2, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.restore();
+            
+            // 妈妈检查时的红色边框警告
+            if (momActive) {
+                const warningIntensity = 0.3 + Math.sin(Date.now() / 200) * 0.2;
+                ctx.strokeStyle = `rgba(255, 0, 0, ${warningIntensity})`;
+                ctx.lineWidth = 10;
+                ctx.strokeRect(5, 5, canvas.width - 10, canvas.height - 10);
+            }
+        }
+
+        function renderMinimap() {
+            const mm = minimapCtx;
+            const scale = minimap.width / worldSize.width;
+            
+            mm.fillStyle = 'rgba(0,0,0,0.8)';
+            mm.fillRect(0, 0, minimap.width, minimap.height);
+            
+            // 绘制障碍物
+            mm.fillStyle = 'rgba(100,100,100,0.5)';
+            for (let obs of obstacles) {
+                mm.fillRect(
+                    (obs.x - obs.width/2) * scale,
+                    (obs.y - obs.height/2) * scale,
+                    obs.width * scale,
+                    obs.height * scale
+                );
+            }
+            
+            // 绘制光球
+            mm.fillStyle = '#00ff96';
+            for (let orb of orbs) {
+                if (orb.collected) continue;
+                mm.beginPath();
+                mm.arc(orb.x * scale, orb.y * scale, 2, 0, Math.PI * 2);
+                mm.fill();
+            }
+            
+            // 绘制玩家
+            mm.fillStyle = '#00d4aa';
+            mm.beginPath();
+            mm.arc(player.x * scale, player.y * scale, 3, 0, Math.PI * 2);
+            mm.fill();
+            
+            // 视野框
+            mm.strokeStyle = 'rgba(255,255,255,0.3)';
+            mm.lineWidth = 1;
+            mm.strokeRect(
+                camera.x * scale,
+                camera.y * scale,
+                canvas.width * scale,
+                canvas.height * scale
+            );
+        }
+
+        // ==================== UI 更新 ====================
+        function updateHUD() {
+            document.getElementById('level-display').textContent = level;
+            document.getElementById('collected').textContent = collectedOrbs;
+            document.getElementById('total-orbs').textContent = totalOrbs;
+            document.getElementById('progress-fill').style.width = (collectedOrbs / totalOrbs * 100) + '%';
+            
+            let hearts = '';
+            for (let i = 0; i < lives; i++) hearts += '❤️';
+            for (let i = lives; i < 3; i++) hearts += '🖤';
+            document.getElementById('lives-display').textContent = hearts;
+        }
+
+        // ==================== 游戏结束 / 关卡完成 ====================
+        function levelComplete() {
+            gameState = 'levelcomplete';
+            clearTimeout(momTimer);
+            clearInterval(warningTimer);
+            
+            const modal = document.getElementById('game-modal');
+            const title = document.getElementById('modal-title');
+            const stats = document.getElementById('modal-stats');
+            const bonus = document.getElementById('modal-bonus');
+            
+            title.textContent = '关卡完成！';
+            title.className = 'modal-title';
+            stats.textContent = `第 ${level} 关完成！收集了 ${collectedOrbs}/${totalOrbs} 个光球`;
+            
+            // 奖励生命
+            const timeBonus = momActive ? 0 : 1;
+            if (lives < 3 && !momActive) {
+                lives++;
+                bonus.textContent = '完美通关！奖励生命 +1';
+                bonus.style.color = '#00d4aa';
+            } else {
+                bonus.textContent = momActive ? '紧急通关！无奖励' : '生命已满，无奖励';
+                bonus.style.color = '#888';
+            }
+            
+            modal.classList.add('active');
+        }
+
+        function gameOver() {
+            gameState = 'gameover';
+            clearTimeout(momTimer);
+            clearInterval(warningTimer);
+            
+            const modal = document.getElementById('game-modal');
+            const title = document.getElementById('modal-title');
+            const stats = document.getElementById('modal-stats');
+            const bonus = document.getElementById('modal-bonus');
+            const btn = modal.querySelector('.modal-btn');
+            
+            title.textContent = '被发现了！';
+            title.className = 'modal-title fail';
+            stats.textContent = `你在第 ${level} 关被妈妈抓住了...`;
+            bonus.textContent = `最终得分: ${(level - 1) * 100 + collectedOrbs * 10}`;
+            bonus.style.color = '#ff6b6b';
+            btn.textContent = '重新开始';
+            btn.onclick = () => {
+                modal.classList.remove('active');
+                btn.onclick = nextLevel; // 恢复默认
+                document.getElementById('menu-screen').classList.remove('hidden');
+                document.getElementById('game-screen').classList.remove('active');
+            };
+            
+            modal.classList.add('active');
+        }
+
+        function nextLevel() {
+            document.getElementById('game-modal').classList.remove('active');
+            level++;
+            initLevel();
+        }
+
+        // ==================== 工具函数 ====================
+        function distance(a, b) {
+            const dx = a.x - b.x;
+            const dy = a.y - b.y;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        function closestPointOnRect(circle, rect) {
+            const halfW = rect.width / 2;
+            const halfH = rect.height / 2;
+            
+            // 旋转后的圆心
+            const cos = Math.cos(-rect.rotation);
+            const sin = Math.sin(-rect.rotation);
+            const dx = circle.x - rect.x;
+            const dy = circle.y - rect.y;
+            const localX = dx * cos - dy * sin;
+            const localY = dx * sin + dy * cos;
+            
+            // 最近点（局部坐标）
+            const closestLocalX = Math.max(-halfW, Math.min(halfW, localX));
+            const closestLocalY = Math.max(-halfH, Math.min(halfH, localY));
+            
+            // 转回世界坐标
+            const closestWorldX = closestLocalX * cos + closestLocalY * sin + rect.x;
+            const closestWorldY = -closestLocalX * sin + closestLocalY * cos + rect.y;
+            
+            return { x: closestWorldX, y: closestWorldY };
+        }
+
+        function setDir(dir, pressed) {
+            keys[dir] = pressed;
+            const btn = document.getElementById('btn-' + dir);
+            if (pressed) btn.classList.add('active');
+            else btn.classList.remove('active');
+        }
+
+        // ==================== 启动 ====================
+        window.onload = init;
+    </script>
+</body>
+</html>
