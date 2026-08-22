@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>2048</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: #f5f5f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+  .g2048-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+  }
+  .g2048-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 360px;
+  }
+  .g2048-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1a1a1a;
+    letter-spacing: -1px;
+  }
+  .g2048-score-box {
+    display: flex;
+    gap: 8px;
+  }
+  .g2048-score, .g2048-best {
+    background: #e8e8e8;
+    border-radius: 6px;
+    padding: 6px 14px;
+    text-align: center;
+    min-width: 64px;
+  }
+  .g2048-score-label {
+    font-size: 11px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .g2048-score-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a1a;
+    font-variant-numeric: tabular-nums;
+  }
+  .g2048-board {
+    position: relative;
+    width: 340px;
+    height: 340px;
+    background: #e0e0e0;
+    border-radius: 10px;
+    padding: 8px;
+  }
+  .g2048-grid-bg {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 8px;
+    width: 100%;
+    height: 100%;
+  }
+  .g2048-cell-bg {
+    background: #f5f5f5;
+    border-radius: 6px;
+  }
+  .g2048-tiles {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    pointer-events: none;
+  }
+  .g2048-tile {
+    position: absolute;
+    width: 73px;
+    height: 73px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 24px;
+    color: #1a1a1a;
+    transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+    z-index: 2;
+  }
+  .g2048-tile.new {
+    animation: tilePop 0.2s ease-out;
+  }
+  .g2048-tile.merged {
+    animation: tileMerge 0.2s ease-out;
+  }
+  @keyframes tilePop {
+    0% { transform: scale(0); opacity: 0; }
+    60% { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes tileMerge {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+  .g2048-tile.v2  { background: #fff8e1; font-size: 24px; }
+  .g2048-tile.v4  { background: #ffecb3; font-size: 24px; }
+  .g2048-tile.v8  { background: #ffcc80; color: #fff; font-size: 24px; }
+  .g2048-tile.v16 { background: #ff8a65; color: #fff; font-size: 24px; }
+  .g2048-tile.v32 { background: #81c784; color: #fff; font-size: 24px; }
+  .g2048-tile.v64 { background: #64b5f6; color: #fff; font-size: 24px; }
+  .g2048-tile.v128  { background: #ba68c8; color: #fff; font-size: 22px; }
+  .g2048-tile.v256  { background: #9c27b0; color: #fff; font-size: 22px; }
+  .g2048-tile.v512  { background: #1976d2; color: #fff; font-size: 22px; }
+  .g2048-tile.v1024 { background: #d32f2f; color: #fff; font-size: 18px; }
+  .g2048-tile.v2048 { background: #388e3c; color: #fff; font-size: 18px; }
+  .g2048-tile.v4096 { background: #1a1a1a; color: #f5f5f5; font-size: 18px; }
+  .g2048-tile.v8192 { background: #c62828; color: #fff; font-size: 18px; }
+
+  .g2048-controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .g2048-btn {
+    background: #1a1a1a;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.15s;
+  }
+  .g2048-btn:hover { opacity: 0.85; }
+  .g2048-btn:active { opacity: 0.7; }
+  .g2048-hint {
+    font-size: 12px;
+    color: #888;
+  }
+  .g2048-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(245,245,245,0.85);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    z-index: 10;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .g2048-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .g2048-overlay-text {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a1a1a;
+  }
+  .g2048-overlay-sub {
+    font-size: 14px;
+    color: #666;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    body { background: #1a1a1a; }
+    .g2048-title { color: #f5f5f5; }
+    .g2048-score, .g2048-best { background: #2a2a2a; }
+    .g2048-score-value { color: #f5f5f5; }
+    .g2048-board { background: #2a2a2a; }
+    .g2048-cell-bg { background: #333; }
+    .g2048-tile.v2  { background: #3d3a30; }
+    .g2048-tile.v4  { background: #4a4520; }
+    .g2048-overlay { background: rgba(26,26,26,0.85); }
+    .g2048-overlay-text { color: #f5f5f5; }
+    .g2048-overlay-sub { color: #aaa; }
+  }
+</style>
+</head>
+<body>
+
+<div class="g2048-wrap" id="g2048">
+  <div class="g2048-header">
+    <div class="g2048-title">2048</div>
+    <div class="g2048-score-box">
+      <div class="g2048-score">
+        <div class="g2048-score-label">Score</div>
+        <div class="g2048-score-value" id="score">0</div>
+      </div>
+      <div class="g2048-best">
+        <div class="g2048-score-label">Best</div>
+        <div class="g2048-score-value" id="best">0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="g2048-board" id="board">
+    <div class="g2048-grid-bg">
+      <div class="g2048-cell-bg"></div><div class="g2048-cell-bg"></div><div class="g2048-cell-bg"></div><div class="g2048-cell-bg"></div>
+      <div class="g2048-cell-bg"></div><div class="g2048-cell-bg"></div><div class="g2048-cell-bg"></div><div class="g2048-cell-bg"></div>
+      <div class="g2048-cell-bg"></div><div class="g2048-cell-bg"></div><div class="g2048-cell-bg"></div><div class="g2048-cell-bg"></div>
+      <div class="g2048-cell-bg"></div><div class="g2048-cell-bg"></div><div class="g2048-cell-bg"></div><div class="g2048-cell-bg"></div>
+    </div>
+    <div class="g2048-tiles" id="tiles"></div>
+    <div class="g2048-overlay" id="overlay">
+      <div class="g2048-overlay-text" id="overlayText">Game Over!</div>
+      <div class="g2048-overlay-sub" id="overlaySub">Try again</div>
+      <button class="g2048-btn" onclick="newGame()">New Game</button>
+    </div>
+  </div>
+
+  <div class="g2048-controls">
+    <button class="g2048-btn" onclick="newGame()">New Game</button>
+    <span class="g2048-hint">Use arrow keys or swipe to play</span>
+  </div>
+</div>
+
+<script>
+(function() {
+  const SIZE = 4;
+  const GAP = 8;
+  const CELL = 73;
+  let board = [];
+  let score = 0;
+  let best = parseInt(localStorage.getItem('kimi2048best') || '0');
+  let gameOver = false;
+  let won = false;
+  let touchStartX = 0, touchStartY = 0;
+
+  const tilesEl = document.getElementById('tiles');
+  const scoreEl = document.getElementById('score');
+  const bestEl = document.getElementById('best');
+  const overlay = document.getElementById('overlay');
+  const overlayText = document.getElementById('overlayText');
+  const overlaySub = document.getElementById('overlaySub');
+  const boardEl = document.getElementById('board');
+
+  bestEl.textContent = best;
+
+  function init() {
+    board = Array(SIZE).fill(null).map(() => Array(SIZE).fill(0));
+    score = 0;
+    gameOver = false;
+    won = false;
+    scoreEl.textContent = '0';
+    overlay.classList.remove('show');
+    addRandomTile();
+    addRandomTile();
+    render();
+  }
+
+  function addRandomTile() {
+    const empty = [];
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        if (board[r][c] === 0) empty.push({r, c});
+      }
+    }
+    if (empty.length === 0) return;
+    const {r, c} = empty[Math.floor(Math.random() * empty.length)];
+    board[r][c] = Math.random() < 0.9 ? 2 : 4;
+  }
+
+  function render() {
+    tilesEl.innerHTML = '';
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        const val = board[r][c];
+        if (val === 0) continue;
+        const tile = document.createElement('div');
+        tile.className = 'g2048-tile v' + val;
+        tile.textContent = val;
+        tile.style.left = (c * (CELL + GAP)) + 'px';
+        tile.style.top = (r * (CELL + GAP)) + 'px';
+        tilesEl.appendChild(tile);
+      }
+    }
+  }
+
+  function renderAnim(changes, newTile) {
+    tilesEl.innerHTML = '';
+    const tileMap = {};
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        const val = board[r][c];
+        if (val === 0) continue;
+        const tile = document.createElement('div');
+        tile.className = 'g2048-tile v' + val;
+        tile.textContent = val;
+        const key = r + ',' + c;
+        tile.style.left = (c * (CELL + GAP)) + 'px';
+        tile.style.top = (r * (CELL + GAP)) + 'px';
+        if (changes[key]) {
+          tile.style.left = (changes[key].fromC * (CELL + GAP)) + 'px';
+          tile.style.top = (changes[key].fromR * (CELL + GAP)) + 'px';
+          if (changes[key].merged) tile.classList.add('merged');
+        }
+        if (newTile && newTile.r === r && newTile.c === c) {
+          tile.classList.add('new');
+        }
+        tilesEl.appendChild(tile);
+        tileMap[key] = tile;
+      }
+    }
+    void tilesEl.offsetHeight;
+    for (const key in changes) {
+      const t = tileMap[key];
+      if (t) {
+        const [r, c] = key.split(',').map(Number);
+        t.style.left = (c * (CELL + GAP)) + 'px';
+        t.style.top = (r * (CELL + GAP)) + 'px';
+      }
+    }
+  }
+
+  function slideRowLeft(row) {
+    let filtered = row.filter(x => x !== 0);
+    const merged = [];
+    for (let i = 0; i < filtered.length - 1; i++) {
+      if (filtered[i] === filtered[i+1]) {
+        filtered[i] *= 2;
+        score += filtered[i];
+        merged.push(i);
+        filtered[i+1] = 0;
+      }
+    }
+    filtered = filtered.filter(x => x !== 0);
+    while (filtered.length < SIZE) filtered.push(0);
+    return { row: filtered, merged };
+  }
+
+  function moveLeft() {
+    let moved = false;
+    const changes = {};
+    for (let r = 0; r < SIZE; r++) {
+      const old = [...board[r]];
+      const { row: newRow, merged } = slideRowLeft(board[r]);
+      for (let c = 0; c < SIZE; c++) {
+        if (old[c] !== 0) {
+          const toC = newRow.indexOf(old[c], c);
+          if (toC >= 0 && toC !== c) {
+            changes[r + ',' + toC] = { fromR: r, fromC: c, merged: merged.includes(toC) };
+          }
+        }
+      }
+      if (JSON.stringify(old) !== JSON.stringify(newRow)) moved = true;
+      board[r] = newRow;
+    }
+    return { moved, changes };
+  }
+
+  function rotateBoard() {
+    const newB = Array(SIZE).fill(null).map(() => Array(SIZE).fill(0));
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        newB[c][SIZE - 1 - r] = board[r][c];
+      }
+    }
+    board = newB;
+  }
+
+  function move(dir) {
+    if (gameOver) return;
+    const rotations = [0, 3, 2, 1];
+    for (let i = 0; i < rotations[dir]; i++) rotateBoard();
+    const { moved, changes } = moveLeft();
+    for (let i = 0; i < (4 - rotations[dir]) % 4; i++) rotateBoard();
+
+    if (!moved) return;
+
+    scoreEl.textContent = score;
+    if (score > best) {
+      best = score;
+      bestEl.textContent = best;
+      localStorage.setItem('kimi2048best', String(best));
+    }
+
+    const emptyBefore = [];
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        if (board[r][c] === 0) emptyBefore.push({r, c});
+      }
+    }
+    addRandomTile();
+    let newTile = null;
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        if (board[r][c] !== 0 && !emptyBefore.some(e => e.r === r && e.c === c)) {
+          const oldVal = changes[r + ',' + c];
+          if (!oldVal) newTile = {r, c};
+        }
+      }
+    }
+
+    renderAnim(changes, newTile);
+
+    if (!won && board.flat().includes(2048)) {
+      won = true;
+      overlayText.textContent = 'You Win!';
+      overlaySub.textContent = 'Keep going or start a new game';
+      overlay.classList.add('show');
+    }
+
+    if (!canMove()) {
+      gameOver = true;
+      overlayText.textContent = 'Game Over!';
+      overlaySub.textContent = 'No more moves available';
+      overlay.classList.add('show');
+    }
+  }
+
+  function canMove() {
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        if (board[r][c] === 0) return true;
+        if (c < SIZE - 1 && board[r][c] === board[r][c+1]) return true;
+        if (r < SIZE - 1 && board[r][c] === board[r+1][c]) return true;
+      }
+    }
+    return false;
+  }
+
+  window.newGame = function() {
+    init();
+  };
+
+  document.addEventListener('keydown', function(e) {
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
+      e.preventDefault();
+    }
+    switch(e.key) {
+      case 'ArrowLeft': move(0); break;
+      case 'ArrowUp': move(1); break;
+      case 'ArrowRight': move(2); break;
+      case 'ArrowDown': move(3); break;
+    }
+  });
+
+  boardEl.addEventListener('touchstart', function(e) {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, {passive: true});
+
+  boardEl.addEventListener('touchend', function(e) {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+    if (Math.max(absDx, absDy) < 30) return;
+    if (absDx > absDy) {
+      move(dx > 0 ? 2 : 0);
+    } else {
+      move(dy > 0 ? 3 : 1);
+    }
+  }, {passive: true});
+
+  init();
+})();
+</script>
+</body>
+</html>
